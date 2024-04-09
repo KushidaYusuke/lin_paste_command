@@ -9,28 +9,35 @@ int dopt = 0;
 int sopt = 0;
 char *dparam = NULL;
 
-
-void paste(int file_num, char **file_list, bool *is_file_end_list, FILE **file_list_pointer) {
-  char delim = '\t'; //まずは区切り文字が一つのみの場合を考える
+//オプションが指定されていない場合
+//引数 file_num: ファイルの個数 
+//is_file_end_list: それぞれのファイルについて、ファイルの終端までたどりついたか判定する関数
+//file_list_pointer: それぞれのファイルへのポインタを格納した配列  
+void paste(int file_num, bool *is_file_end_list, FILE **file_list_pointer) {
+  char delim = '\t'; //デフォルトではタブ区切り	
   bool is_all_file_end = true;//すべてのファイルが終端に達したかどうかを管理
-  int now_index = 0;
-  char *tmp_colomn = malloc(INIT_ALLOC*sizeof(char));
-  int now_alloc_num = INIT_ALLOC;
+  int now_index = 0;//現在見ている文字が行頭から何番目か
+  char *tmp_row = malloc(INIT_ALLOC*sizeof(char)); //読み込んだ文字を一時的に保管しておく
+  int now_alloc_num = INIT_ALLOC;//現在割り当てられているメモリの要素数
+  
+  //すべてのファイルで終端までたどり着くまでループする
   while(1) {
     for(int i = 0; i < file_num; i++) {
-      if(now_index >= now_alloc_num) tmp_colomn = realloc(tmp_colomn, (i+ADD_ALLOC)*sizeof(char));
+      if(now_index >= now_alloc_num) tmp_row = realloc(tmp_row, (i+ADD_ALLOC)*sizeof(char));
+      //現在見ているファイルがすでに終端までたどり着いている場合は単に区切り文字を出力	
       if(is_file_end_list[i]) {
-        tmp_colomn[now_index] = delim;
+        tmp_row[now_index] = delim;
 	now_index += 1;
 	continue;
       }
-      FILE *file = file_list_pointer[i];
+      FILE *file = file_list_pointer[i]; //現在見ているファイルへのポインタ	
       int c;
       while(1) {
 	c = fgetc(file);
 	if(c == '\n') {
+	  //各行の右端以外は区切り文字で区切る
 	  if(i != file_num-1) {
-	    tmp_colomn[now_index] = delim;
+	    tmp_row[now_index] = delim;
 	    now_index += 1;
           }
 	  //is_all_file_end = false;
@@ -40,24 +47,26 @@ void paste(int file_num, char **file_list, bool *is_file_end_list, FILE **file_l
 	if(c == EOF) {
 	  is_file_end_list[i] = true;
 	  if(i != file_num - 1) {
-	    tmp_colomn[now_index] = delim;
+	    tmp_row[now_index] = delim;
 	    now_index += 1;
 	  }
 	  break;
 	}
         is_all_file_end = false;
-	tmp_colomn[now_index] = c;
+	tmp_row[now_index] = c;
 	now_index += 1;
       }
     }
+    //すべてのファイルで終端までたどり着いたら終了
     if(is_all_file_end) {
       return;
     }
+    //実際に出力をするのはそれぞれの行について、すべてのファイルの読み込みが終わった時点
     for(int i = 0; i < now_index; i++) {
-      putchar(tmp_colomn[i]);
+      putchar(tmp_row[i]);
     }
-    free(tmp_colomn);
-    tmp_colomn = malloc(INIT_ALLOC*sizeof(char));
+    free(tmp_row);
+    tmp_row = malloc(INIT_ALLOC*sizeof(char));
     now_index = 0;
     now_alloc_num = INIT_ALLOC;
     putchar('\n');
@@ -65,18 +74,19 @@ void paste(int file_num, char **file_list, bool *is_file_end_list, FILE **file_l
   }
 }
 
-void paste_option_d(int file_num, char **file_list, bool *is_file_end_list, FILE **file_list_pointer, int d_param_num) {
-  //char delim = dparam[0]; //まずは区切り文字が一つのみの場合を考える
+//d_param_num: -dオプションの引数として渡される区切り文字の個数
+void paste_option_d(int file_num, bool *is_file_end_list, FILE **file_list_pointer, int d_param_num) {
   bool is_all_file_end = true;//すべてのファイルが終端に達したかどうかを管理
   int now_index = 0;
-  int dparam_index = 0;
-  char *tmp_colomn = malloc(INIT_ALLOC*sizeof(char));
+  int dparam_index = 0; //出力する区切り文字のインデックス 
+  char *tmp_row = malloc(INIT_ALLOC*sizeof(char));
   int now_alloc_num = INIT_ALLOC;
   while(1) {
     for(int i = 0; i < file_num; i++) {
-      if(now_index >= now_alloc_num) tmp_colomn = realloc(tmp_colomn, (i+ADD_ALLOC)*sizeof(char));
+      if(now_index >= now_alloc_num) tmp_row = realloc(tmp_row, (i+ADD_ALLOC)*sizeof(char));
       if(is_file_end_list[i]) {
-        tmp_colomn[now_index] = dparam[dparam_index%d_param_num];
+	dparam_index %= d_param_num;
+        tmp_row[now_index] = dparam[dparam_index];
 	dparam_index += 1;
 	now_index += 1;
 	continue;
@@ -87,7 +97,8 @@ void paste_option_d(int file_num, char **file_list, bool *is_file_end_list, FILE
 	c = fgetc(file);
 	if(c == '\n') {
 	  if(i != file_num-1) {
-	    tmp_colomn[now_index] = dparam[dparam_index%d_param_num];
+	    dparam_index %= d_param_num;
+	    tmp_row[now_index] = dparam[dparam_index];
 	    dparam_index += 1;
 	    now_index += 1;
           }
@@ -98,14 +109,15 @@ void paste_option_d(int file_num, char **file_list, bool *is_file_end_list, FILE
 	if(c == EOF) {
 	  is_file_end_list[i] = true;
 	  if(i != file_num - 1) {
-	    tmp_colomn[now_index] = dparam[dparam_index%d_param_num];
+	    dparam_index %= d_param_num;
+	    tmp_row[now_index] = dparam[dparam_index];
 	    dparam_index += 1;
 	    now_index += 1;
 	  }
 	  break;
 	}
         is_all_file_end = false;
-	tmp_colomn[now_index] = c;
+	tmp_row[now_index] = c;
 	now_index += 1;
       }
     }
@@ -113,10 +125,10 @@ void paste_option_d(int file_num, char **file_list, bool *is_file_end_list, FILE
       return;
     }
     for(int i = 0; i < now_index; i++) {
-      putchar(tmp_colomn[i]);
+      putchar(tmp_row[i]);
     }
-    free(tmp_colomn);
-    tmp_colomn = malloc(INIT_ALLOC*sizeof(char));
+    free(tmp_row);
+    tmp_row = malloc(INIT_ALLOC*sizeof(char));
     now_index = 0;
     dparam_index = 0;
     now_alloc_num = INIT_ALLOC;
@@ -126,51 +138,67 @@ void paste_option_d(int file_num, char **file_list, bool *is_file_end_list, FILE
 
 }
 
+
+//-sオプションのみが指定された場合
+//各ファイルへのポインタを引数にとって、タブ区切りで順にファイルの内容を出力する
 void paste_option_s(FILE *file) {
   int now_index = 0;
-  char *tmp_column = malloc(INIT_ALLOC*sizeof(int));
+  char *tmp_row = malloc(INIT_ALLOC*sizeof(char));
   int now_alloc_size = INIT_ALLOC;
   int c;
   while(1) {
-    if(now_index >= now_alloc_size) tmp_column = realloc(tmp_column, (now_index + ADD_ALLOC)*sizeof(char));
+    if(now_index >= now_alloc_size) tmp_row = realloc(tmp_row, (now_index + ADD_ALLOC)*sizeof(char));
     now_alloc_size += ADD_ALLOC; 
     c = fgetc(file);
     if(c == '\n') {
-      tmp_column[now_index] = '\t';
+      tmp_row[now_index] = '\t';
       now_index += 1;
       continue;
     }
     if(c == EOF) {
       for(int i = 0; i < now_index-1; i++) {
-        putchar(tmp_column[i]);
+        putchar(tmp_row[i]);
       }
       putchar('\n');
-      free(tmp_column);
+      free(tmp_row);
       return;
     }
-    tmp_column[now_index] = c;
+    tmp_row[now_index] = c;
     now_index += 1;
   }
 }
 
-
+//-sオプションと-dオプションが共に指定された場合
 void paste_option_s_with_d(FILE *file, int d_param_num) {
+  int now_index = 0;
+  char *tmp_row = malloc(INIT_ALLOC*sizeof(char));
+  int now_alloc_size = INIT_ALLOC;
   int delim_count = 0;
   int c;
   bool is_before_n = false;
   while(1) {
+    if(now_index >= now_alloc_size) {
+      tmp_row = realloc(tmp_row, (now_index+ADD_ALLOC)*sizeof(char));
+      now_alloc_size += ADD_ALLOC;
+    }
+
     c = fgetc(file);
     if(c == EOF) {
+      for(int i = 0; i < now_index-1; i++) {
+        putchar(tmp_row[i]);
+      }
       putchar('\n');
       return;
     }
     if(c == '\n') {
-      is_before_n = true;
-      putchar(dparam[delim_count%d_param_num]);
-      delim_count += 1;
+      tmp_row[now_index] = dparam[delim_count%d_param_num]; 
+      now_index += 1;
+      delim_count += 1; 
       continue;
     }
-    putchar(c);
+
+    tmp_row[now_index] = c;
+    now_index += 1;
   }
 }
 
@@ -187,15 +215,18 @@ int main(int argc, char *argv[]) {
       case 's':
         sopt = 1;
         break;
+      default:
+        fprintf(stderr, "paste: invalid option -- %c \nTry 'paste --help' for more information.\n", optarg[0]);
+	exit(1);
     }
   }
 
-  int file_num = argc - optind;
-  char *file_list[file_num];
-  bool is_file_end_list[file_num];
-  FILE *file_list_pointer[file_num];
 
+  int file_num = argc - optind;//ファイルの個数	
+  bool is_file_end_list[file_num];//それぞれのファイルについて終端までたどり着いたかを表す
+  FILE *file_list_pointer[file_num];//それぞれのファイルへのポインタ
 
+  //-dオプションで指定された区切り文字の個数をカウントする
   int d_param_num = 0;
   if(dopt) { 
     while(dparam[d_param_num] != '\0') {
@@ -206,24 +237,24 @@ int main(int argc, char *argv[]) {
 
 
   if(sopt) {
-      //-dオプションが指定されない場合の処理
+      //-sオプションのみが指定された場合の処理
     if(!dopt) {
       for(int i = optind; i < argc; i++) {
         FILE *file = fopen(argv[i], "r");
         if(file == NULL) {
-          fprintf(stderr, "ファイルを開くことができませんでした\n");
+          fprintf(stderr, "paste: %s: No such file or directory\n", argv[i]);
           exit(1);
         }
 	paste_option_s(file);
 	fclose(file);
       }
     }
-    //-dオプションが指定された場合の処理
+    //-s,-dオプションがともに指定された場合の処理
     else {
       for(int i = optind; i < argc; i++) {
         FILE *file = fopen(argv[i], "r");
 	if(file == NULL) {
-	  fprintf(stderr, "ファイルを開くことができませんでした\n");
+          fprintf(stderr, "paste: %s: No such file or directory\n", argv[i]);
 	  exit(1);
 	}
         paste_option_s_with_d(file, d_param_num);
@@ -234,23 +265,19 @@ int main(int argc, char *argv[]) {
   }
   else{
     for(int i = optind; i < argc; i++) {
-    file_list[i-optind] = argv[i];
-    is_file_end_list[i-optind] = false;
-    file_list_pointer[i-optind] = fopen(file_list[i-optind], "r"); 
+      is_file_end_list[i-optind] = false;
+      FILE *file = fopen(argv[i], "r");
+      if(file == NULL) {
+        fprintf(stderr, "paste: %s: No such file or directory\n", argv[i]);
+        exit(1);
+      }
+      file_list_pointer[i-optind] = file; 
     }
- 
-    if(dopt) paste_option_d(file_num, file_list, is_file_end_list, file_list_pointer, d_param_num);
-    else paste(file_num, file_list, is_file_end_list, file_list_pointer);
+    //-dオプションのみが指定された場合の処理
+    if(dopt) paste_option_d(file_num, is_file_end_list, file_list_pointer, d_param_num);
+    //オプションが指定されていない場合の処理
+    else paste(file_num, is_file_end_list, file_list_pointer);
  
   }
 
- // for(int i = 0; i < file_num; i++) {
-   // printf("%s", file_list[i]);
-  //}
-  
-//  int i = 0;
-  //while(dparam[i] != '\0') {
-    //printf("%c\n", dparam[i]);
-    //i++;
-  //}
 }

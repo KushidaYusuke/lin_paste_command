@@ -277,7 +277,11 @@ int main(int argc, char *argv[]) {
     if(dopt) paste_option_d(file_num, is_file_end_list, file_list_pointer, d_param_num);
     //オプションが指定されていない場合の処理
     else paste(file_num, is_file_end_list, file_list_pointer);
- 
+    
+    for(int i = 0; i < file_num; i++) {
+      FILE *file = file_list_pointer[i];
+      fclose(file);
+    }
   }
 
 }

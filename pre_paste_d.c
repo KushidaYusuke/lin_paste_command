@@ -10,10 +10,10 @@ int main(int argc, char *argv[]) {
   char *file_list[argc];
   bool is_file_end_list[argc];
   FILE *file_list_pointer[argc];
-  for(int i = 1; i < argc; i++) {
-    file_list[i-1] = argv[i];
-    is_file_end_list[i-1] = false;
-    file_list_pointer[i-1] = fopen(file_list[i-1], "r"); 
+  for(int i = 3; i < argc; i++) {
+    file_list[i-3] = argv[i];
+    is_file_end_list[i-3] = false;
+    file_list_pointer[i-3] = fopen(file_list[i-3], "r"); 
   }
 
   bool is_all_file_end = true;//すべてのファイルが終端に達したかどうかを管理
@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
   char *colom_list = malloc(INIT_ALLOC*sizeof(char));
   int now_alloc_num = INIT_ALLOC;
   while(1) {
-    for(int i = 0; i < argc-1; i++) {
+    for(int i = 0; i < argc-3; i++) {
       if(now_index >= now_alloc_num) colom_list = realloc(colom_list, (i+ADD_ALLOC)*sizeof(char));
       if(is_file_end_list[i]) {
         colom_list[now_index] = delim;
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
       while(1) {
 	c = fgetc(file);
 	if(c == '\n') {
-	  if(i != argc-2) {
+	  if(i != argc-4) {
 	    colom_list[now_index] = delim;
 	    now_index += 1;
           }
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 	}
 	if(c == EOF) {
 	  is_file_end_list[i] = true;
-	  if(i !=argc-2) {
+	  if(i !=argc-4) {
 	    colom_list[now_index] = delim;
 	    now_index += 1;
 	  }

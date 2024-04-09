@@ -11,7 +11,7 @@ char *dparam = NULL;
 
 //オプションが指定されていない場合
 //引数 file_num: ファイルの個数 
-//is_file_end_list: それぞれのファイルについて、ファイルの終端までたどりついたか判定する関数
+//is_file_end_list: それぞれのファイルについて、ファイルの終端までたどりついたか判定する変数
 //file_list_pointer: それぞれのファイルへのポインタを格納した配列  
 void paste(int file_num, bool *is_file_end_list, FILE **file_list_pointer) {
   char delim = '\t'; //デフォルトではタブ区切り	

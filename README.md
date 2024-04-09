@@ -32,7 +32,7 @@ c003
 ./out   paste1.txt paste2.txt paste3.txt
 ```
 
-- 入力
+- 出力
 ```
 a001    b001
 a002    b002    c001
